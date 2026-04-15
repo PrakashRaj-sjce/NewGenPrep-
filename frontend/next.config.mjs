@@ -2,9 +2,8 @@ import 'dotenv/config';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Standalone output for optimized cloud/Docker deployment
+  // Standalone output for optimized cloud/Docker deployment (Removed for Vercel compatibility)
   // For Chrome Extension builds, use a separate build script with output: 'export'.
-  output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
   },
