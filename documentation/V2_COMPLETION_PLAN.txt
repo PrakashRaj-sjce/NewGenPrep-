@@ -1,0 +1,586 @@
+================================================================================
+  AI INTERVIEW BOT - V2.0 COMPLETION PLAN
+  Status: PENDING APPROVAL
+  Created: April 9, 2026
+  Target: Complete all pending V2.0 work before V3.0 modules
+  Scale Target: 1000 to 3000+ concurrent users
+================================================================================
+
+
+TABLE OF CONTENTS
+-----------------
+  1. Pending Items Summary
+  2. Fix 1 - Real Analytics Data
+  3. Fix 2 - Background Scheduler
+  4. Fix 3 - Report Engine Upgrade
+  5. Fix 4 - Password Reset Flow
+  6. Fix 5 - API Monolith Refactor
+  7. Fix 6 - Package Identity
+  8. Fix 7 - Rate Limiting and API Security
+  9. Fix 8 - Database Indexing for Scale
+  10. Fix 9 - Connection Pooling
+  11. Architecture Layer Diagram
+  12. Execution Order
+
+
+================================================================================
+1. PENDING ITEMS SUMMARY
+================================================================================
+
+  ID   | Item                          | Severity | File(s) Affected
+  -----|-------------------------------|----------|---------------------------
+  FIX1 | Hardcoded analytics data      | HIGH     | interview_api.py L1194
+  FIX2 | Scheduler disabled            | HIGH     | scheduler_service.py L27
+  FIX3 | Report engine too basic       | HIGH     | report_engine.py (40 lines)
+  FIX4 | Password reset non-functional | MEDIUM   | forgot-password/page.tsx
+  FIX5 | 2038-line monolith API        | HIGH     | interview_api.py
+  FIX6 | Generic package name          | LOW      | frontend/package.json
+  FIX7 | No rate limiting              | CRITICAL | All endpoints
+  FIX8 | No database indexes           | CRITICAL | MongoDB collections
+  FIX9 | No connection pooling config  | HIGH     | interview_api.py
+
+
+================================================================================
+2. FIX 1 - REAL ANALYTICS DATA
+================================================================================
+
+  PROBLEM:
+    Lines 1194-1203 in interview_api.py return hardcoded fake data:
+      skillAnalysis -> Always returns Python, JavaScript, React
+      performanceTrend -> Always returns 2024-01, 2024-02, 2024-03
+
+  SOLUTION:
+    Aggregate real data from MongoDB completed sessions.
+
+  FLOW:
+    HR clicks Analytics Tab
+         |
+         v
+    GET /api/hr/analytics
+         |
+         v
+    Query db.sessions where status = completed
+         |
+         +---> Aggregate all detected_skills from responses[]
+         |        |
+         |        v
+         |     Count skill mentions, calculate avg score per skill
+         |        |
+         |        v
+         |     Return top 10 skills with real counts and scores
+         |
+         +---> Group sessions by month (created_at field)
+                  |
+                  v
+               Count interviews per month, avg score per month
+                  |
+                  v
+               Return last 6 months of real trend data
+
+  FILES TO MODIFY:
+    backend/interview_api.py -> Replace L1194-1203 with aggregation logic
+
+
+================================================================================
+3. FIX 2 - BACKGROUND SCHEDULER
+================================================================================
+
+  PROBLEM:
+    scheduler_service.py line 27-29:
+      asyncio.create_task is commented out
+      Reason: Windows event loop crash on shutdown
+
+  SOLUTION:
+    Use asyncio background task with proper shutdown handling.
+    Wrap the loop in try/except for CancelledError.
+    Register shutdown hook to cancel the task cleanly.
+
+  FLOW:
+    App Startup (FastAPI lifespan)
+         |
+         v
+    scheduler.start() called
+         |
+         v
+    Creates background asyncio task
+         |
+         v
+    Every 30 minutes (NOT 1 hour, faster for scale):
+         |
+         +---> Query db.schedules for upcoming interviews
+         |        |
+         |        v
+         |     Check if interview is in 24h window
+         |        |
+         |        +---> YES and not reminded_24h -> Send 24h email
+         |        |
+         |        +---> NO -> Check 1h window
+         |                    |
+         |                    +---> YES and not reminded_1h -> Send 1h email
+         |
+         v
+    On App Shutdown:
+         |
+         v
+    Cancel background task gracefully (no crash)
+
+  FILES TO MODIFY:
+    backend/scheduler_service.py -> Re-enable with proper cancellation
+    backend/interview_api.py -> Use lifespan context manager instead of
+                                deprecated on_event
+
+
+================================================================================
+4. FIX 3 - REPORT ENGINE UPGRADE
+================================================================================
+
+  PROBLEM:
+    report_engine.py is only 40 lines.
+    Returns a simple dict with avg score and rating.
+    No per-question breakdown.
+    No downloadable format.
+
+  SOLUTION:
+    Upgrade to generate structured HTML report.
+    Add per-question performance breakdown.
+    Add competency radar data.
+    Add new endpoint: GET /api/interview/report/{id}/download
+
+  FLOW:
+    Interview completes (status = completed)
+         |
+         v
+    generate_report_summary(session) called
+         |
+         v
+    Calculate per-question scores
+         |
+         +---> For each response in session.responses[]:
+         |        |
+         |        v
+         |     Map to question from session.questions_asked[]
+         |     Record: question_text, answer, quality_score, stage
+         |
+         +---> Calculate stage-level averages
+         |        |
+         |        v
+         |     Stage 1 avg (Resume), Stage 2 avg (Role), Stage 3 avg (HR)
+         |
+         +---> Calculate competency breakdown
+         |        |
+         |        v
+         |     Aggregate competency_scores across all responses
+         |
+         +---> Calculate proctoring summary
+         |        |
+         |        v
+         |     warning_count, incidents list, integrity_score
+         |
+         v
+    Return complete report dict
+         |
+         v
+    GET /api/interview/report/{id}/download
+         |
+         v
+    Render HTML template with report data
+         |
+         v
+    Return as downloadable HTML file
+
+  FILES TO MODIFY:
+    backend/report_engine.py -> Rewrite with full breakdown
+  FILES TO CREATE:
+    backend/report_template.html -> HTML template for download
+
+
+================================================================================
+5. FIX 4 - PASSWORD RESET FLOW
+================================================================================
+
+  PROBLEM:
+    frontend/app/forgot-password/page.tsx exists but only does console.log
+    No backend endpoint exists for password reset
+
+  SOLUTION:
+    Add backend endpoints for reset token generation and password update.
+    Frontend already has the UI, just needs to call real API.
+
+  FLOW:
+    User clicks Forgot Password
+         |
+         v
+    Enters email, clicks Send Reset Link
+         |
+         v
+    POST /api/auth/forgot-password
+         |
+         v
+    Backend checks if email exists in db.users
+         |
+         +---> NOT FOUND -> Return success anyway (security: no email enum)
+         |
+         +---> FOUND -> Generate 6-digit OTP code
+                  |
+                  v
+               Store OTP + expiry (15 min) in db.password_resets
+                  |
+                  v
+               Send OTP via email (notification_service)
+                  |
+                  v
+               Return success message
+
+    User receives OTP email
+         |
+         v
+    Enters OTP + new password on reset page
+         |
+         v
+    POST /api/auth/reset-password
+         |
+         v
+    Backend validates OTP and expiry
+         |
+         +---> INVALID or EXPIRED -> Return error
+         |
+         +---> VALID -> Hash new password, update db.users
+                  |
+                  v
+               Delete used OTP from db.password_resets
+                  |
+                  v
+               Return success, redirect to login
+
+  FILES TO MODIFY:
+    frontend/app/forgot-password/page.tsx -> Add OTP input and API calls
+  FILES TO CREATE:
+    backend/routes/auth_routes.py -> forgot-password and reset-password
+
+
+================================================================================
+6. FIX 5 - API MONOLITH REFACTOR
+================================================================================
+
+  PROBLEM:
+    interview_api.py is 2038 lines with ALL routes in one file:
+      Auth (register, login, logout, me)
+      Interview (upload, start, respond, report, history, stats)
+      HR (candidates, analytics, questions, settings, schedule, rubrics)
+      Proctoring (warning, terminate)
+      Practice (generate, evaluate, mock)
+      Recording (upload)
+      Calendar (ics export)
+
+  SOLUTION:
+    Split into route modules using FastAPI APIRouter.
+    Keep interview_api.py as the app entry point (thin).
+
+  NEW STRUCTURE:
+    backend/
+      interview_api.py          -> App init, middleware, startup (thin)
+      routes/
+        auth_routes.py          -> /api/auth/*
+        interview_routes.py     -> /api/interview/*
+        hr_routes.py            -> /api/hr/*
+        proctoring_routes.py    -> /api/interview/*/warning, terminate
+        practice_routes.py      -> /api/practice/*
+        recording_routes.py     -> /api/interview/upload-recording
+      services/
+        db_service.py           -> MongoDB connection, get_session, save_session
+        auth_service.py         -> Password hashing, JWT, user lookup
+      ai_engine.py              -> (unchanged)
+      question_helpers.py       -> (unchanged)
+      report_engine.py          -> (upgraded per FIX3)
+      notification_service.py   -> (unchanged)
+      scheduler_service.py      -> (fixed per FIX2)
+
+  LAYER DIAGRAM:
+    +-----------------------------------------------------------+
+    |                     CLIENT LAYER                          |
+    |  Frontend (Next.js)  |  Chrome Extension  |  Mobile App   |
+    +-----------------------------------------------------------+
+                            |
+                     HTTPS / REST API
+                            |
+    +-----------------------------------------------------------+
+    |                   API GATEWAY LAYER                        |
+    |  interview_api.py (FastAPI App)                           |
+    |    - CORS Middleware                                       |
+    |    - Rate Limiting Middleware                              |
+    |    - Auth Middleware (JWT)                                 |
+    +-----------------------------------------------------------+
+                            |
+    +-----------------------------------------------------------+
+    |                    ROUTE LAYER                             |
+    |  auth_routes  | interview_routes | hr_routes | practice   |
+    |  proctoring   | recording_routes | calendar               |
+    +-----------------------------------------------------------+
+                            |
+    +-----------------------------------------------------------+
+    |                   SERVICE LAYER                            |
+    |  db_service    | auth_service   | report_engine           |
+    |  notification  | scheduler      | ai_engine               |
+    +-----------------------------------------------------------+
+                            |
+    +-----------------------------------------------------------+
+    |                   DATA LAYER                               |
+    |  MongoDB Atlas (users, sessions, schedules, rubrics,      |
+    |                 question_sets, settings, password_resets)  |
+    +-----------------------------------------------------------+
+                            |
+    +-----------------------------------------------------------+
+    |                EXTERNAL SERVICES LAYER                     |
+    |  Azure OpenAI (GPT + Whisper)  |  SMTP (Email)           |
+    |  Azure Blob / AWS S3 (Recordings)                         |
+    +-----------------------------------------------------------+
+
+
+================================================================================
+7. FIX 6 - PACKAGE IDENTITY
+================================================================================
+
+  PROBLEM:
+    frontend/package.json has name: "my-v0-project"
+
+  SOLUTION:
+    Rename to match project identity.
+    Update version to 2.0.0.
+
+  FILES TO MODIFY:
+    frontend/package.json -> name and version fields
+
+
+================================================================================
+8. FIX 7 - RATE LIMITING AND API SECURITY
+================================================================================
+
+  PROBLEM:
+    No rate limiting on any endpoint.
+    A single bad actor can flood the API.
+    At 1000-3000 concurrent users, we need protection.
+
+  SOLUTION:
+    Add slowapi rate limiting middleware to FastAPI.
+    Different limits per endpoint category.
+
+  RATE LIMITS:
+    Endpoint Category          | Limit
+    ---------------------------|------------------
+    /api/auth/register         | 5 per minute per IP
+    /api/auth/login            | 10 per minute per IP
+    /api/auth/forgot-password  | 3 per minute per IP
+    /api/interview/respond     | 30 per minute per user
+    /api/interview/upload-*    | 10 per minute per user
+    /api/hr/*                  | 60 per minute per user
+    /api/practice/*            | 20 per minute per user
+    /api/transcribe            | 30 per minute per user
+    /health                    | No limit
+
+  FILES TO MODIFY:
+    backend/interview_api.py -> Add slowapi middleware
+    backend/requirements.txt -> Add slowapi dependency
+
+
+================================================================================
+9. FIX 8 - DATABASE INDEXING FOR SCALE
+================================================================================
+
+  PROBLEM:
+    No indexes on MongoDB collections.
+    At 3000+ users, queries on sessions, users will be full scans.
+
+  SOLUTION:
+    Add indexes on startup for all frequently queried fields.
+
+  INDEXES TO CREATE:
+    Collection: users
+      - email (unique)
+      - id (unique)
+
+    Collection: sessions
+      - session_id (unique)
+      - user_id
+      - status
+      - created_at
+
+    Collection: schedules
+      - id (unique)
+      - candidateEmail
+      - status
+      - date
+
+    Collection: question_sets
+      - id (unique)
+      - isActive
+      - category
+
+    Collection: rubrics
+      - id (unique)
+
+    Collection: password_resets (NEW)
+      - email
+      - expires_at (TTL index, auto-delete expired)
+
+  FLOW:
+    App Startup
+         |
+         v
+    startup_db() called
+         |
+         v
+    Connect to MongoDB
+         |
+         v
+    Create indexes (create_index is idempotent, safe to call every start)
+         |
+         v
+    Log index creation results
+         |
+         v
+    App ready to serve
+
+  FILES TO MODIFY:
+    backend/interview_api.py (or new db_service.py) -> Add index creation
+
+
+================================================================================
+10. FIX 9 - CONNECTION POOLING
+================================================================================
+
+  PROBLEM:
+    AsyncIOMotorClient is created with default pool settings.
+    At 3000 concurrent users, the default pool (100 connections) may exhaust.
+
+  SOLUTION:
+    Configure Motor client with explicit pool settings.
+    Set maxPoolSize, minPoolSize, and connection timeouts.
+
+  CONFIGURATION:
+    maxPoolSize = 200       (handles burst of 3000 users)
+    minPoolSize = 10        (keeps warm connections)
+    maxIdleTimeMS = 30000   (close idle after 30s)
+    connectTimeoutMS = 5000 (fail fast on connection issues)
+    serverSelectionTimeoutMS = 5000
+
+  FILES TO MODIFY:
+    backend/interview_api.py -> Update AsyncIOMotorClient constructor
+    (or new db_service.py after refactor)
+
+
+================================================================================
+11. ARCHITECTURE LAYER DIAGRAM (AFTER ALL FIXES)
+================================================================================
+
+  REQUEST FLOW (1000-3000 concurrent users):
+
+    User Browser / Extension / Mobile
+         |
+         v
+    [NGINX / Load Balancer] (optional, for production)
+         |
+         v
+    [FastAPI Application]
+         |
+         +---> Rate Limiter (slowapi) checks IP/user limits
+         |        |
+         |        +---> REJECTED (429 Too Many Requests)
+         |        |
+         |        v
+         +---> CORS Middleware validates origin
+         |        |
+         |        v
+         +---> JWT Auth Middleware validates token
+         |        |
+         |        +---> REJECTED (401 Unauthorized)
+         |        |
+         |        v
+         +---> Route Handler executes business logic
+                  |
+                  +---> MongoDB (pooled connections, indexed queries)
+                  |
+                  +---> Azure OpenAI (AI question/evaluation)
+                  |
+                  +---> SMTP (email notifications)
+                  |
+                  v
+               Response returned to client
+
+
+  DATA FLOW FOR INTERVIEW SESSION:
+
+    Candidate uploads resume (PDF)
+         |
+         v
+    pdfplumber extracts text
+         |
+         v
+    Azure GPT parses into Knowledge Graph
+         |
+         v
+    Session created in MongoDB (indexed by session_id, user_id)
+         |
+         v
+    Interview starts -> 15 questions generated (5-5-5 pattern)
+         |
+         v
+    For each question:
+         |
+         +---> AI generates question (GPT)
+         |
+         +---> Candidate speaks answer
+         |
+         +---> Audio transcribed (Whisper)
+         |
+         +---> Answer evaluated (GPT) with rubric scoring
+         |
+         +---> If score < threshold -> Clarification question (max 2)
+         |
+         +---> Session updated in MongoDB
+         |
+         v
+    Interview completes
+         |
+         v
+    Report generated (full breakdown per question, stage, competency)
+         |
+         v
+    HR notified (email)
+
+
+================================================================================
+12. EXECUTION ORDER
+================================================================================
+
+  The fixes must be done in this specific order due to dependencies:
+
+  PHASE 1 - FOUNDATION (Do First)
+  --------------------------------
+    Step 1: FIX6 - Package Identity (5 min, no dependencies)
+    Step 2: FIX8 - Database Indexes (15 min, critical for everything)
+    Step 3: FIX9 - Connection Pooling (10 min, critical for scale)
+
+  PHASE 2 - SECURITY (Do Second)
+  --------------------------------
+    Step 4: FIX7 - Rate Limiting (30 min, protects all endpoints)
+
+  PHASE 3 - REFACTOR (Do Third)
+  --------------------------------
+    Step 5: FIX5 - API Monolith Split (60 min, enables clean work)
+       Creates: routes/ and services/ folders
+       Moves all route code into separate files
+       Creates db_service.py with shared functions
+
+  PHASE 4 - FEATURE FIXES (Do Last)
+  --------------------------------
+    Step 6: FIX1 - Real Analytics (30 min, depends on refactored code)
+    Step 7: FIX2 - Scheduler Fix (20 min, depends on refactored code)
+    Step 8: FIX3 - Report Engine (45 min, standalone)
+    Step 9: FIX4 - Password Reset (40 min, needs new routes + frontend)
+
+  TOTAL ESTIMATED TIME: 4-5 hours of focused work
+
+
+================================================================================
+  END OF V2.0 COMPLETION PLAN
+================================================================================

@@ -1,0 +1,20 @@
+{
+    "manifest_version": 3,
+    "name": "AI Interview Bot",
+    "version": "1.0.0",
+    "description": "AI-powered interview assistant",
+    "permissions": [
+        "activeTab",
+        "storage",
+        "scripting"
+    ],
+    "action": {
+        "default_popup": "index.html",
+        "default_title": "Open Interview Bot"
+    },
+    "icons": {
+        "16": "favicon-16x16.png",
+        "32": "icon-dark-32x32.png",
+        "192": "android-chrome-192x192.png"
+    }
+}

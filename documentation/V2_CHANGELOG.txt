@@ -1,0 +1,372 @@
+================================================================================
+  NEWGENPREP - V2.0 CHANGELOG
+  Date: April 9, 2026
+  Summary: Complete V2.0 stabilization, refactor, and scale hardening
+================================================================================
+
+
+OVERVIEW
+--------
+  9 fixes applied across 5 phases.
+  Backend refactored from 1 file (2038 lines) to 12 modular files.
+  43 API endpoints registered and verified.
+  System hardened for 1000-3000+ concurrent users.
+
+
+================================================================================
+PHASE 1: FOUNDATION
+================================================================================
+
+  FIX6: Package Identity
+  ----------------------
+    File Changed: frontend/package.json
+    Before: name = "my-v0-project", version = "0.1.0"
+    After:  name = "newgenprep", version = "2.0.0"
+
+
+================================================================================
+PHASE 2: DATABASE AND SCALE
+================================================================================
+
+  FIX8: Database Indexes
+  ----------------------
+    File Created: backend/services/db_service.py
+
+    Indexes created on every startup (idempotent):
+      users         -> email (unique), id (unique)
+      sessions      -> session_id (unique), user_id, status, created_at
+      schedules     -> id (unique), candidateEmail, status, date
+      question_sets -> id (unique), isActive, category
+      rubrics       -> id (unique)
+      password_resets -> email, expires_at (TTL auto-delete)
+
+    Impact: Queries that were full collection scans are now indexed lookups.
+    At 3000 users, session lookups go from O(n) to O(log n).
+
+  FIX9: Connection Pooling
+  ------------------------
+    File: backend/services/db_service.py
+
+    Configuration:
+      maxPoolSize = 200     (handles burst traffic)
+      minPoolSize = 10      (warm connections ready)
+      maxIdleTimeMS = 30000 (closes stale connections)
+      connectTimeoutMS = 5000
+      serverSelectionTimeoutMS = 5000
+      retryWrites = True
+      retryReads = True
+
+    Impact: Default pool was 100 connections. Now 200 with warm minimum.
+    Prevents connection exhaustion under 3000+ concurrent users.
+
+
+================================================================================
+PHASE 3: SECURITY
+================================================================================
+
+  FIX7: Rate Limiting
+  -------------------
+    Dependency Added: slowapi >= 0.1.9 (to requirements.txt)
+    File Changed: backend/interview_api.py
+
+    Global default: 120 requests per minute per IP
+    Storage: in-memory (use Redis for multi-instance deployment)
+
+    Security Headers added to all responses:
+      X-Content-Type-Options: nosniff
+      X-Frame-Options: DENY
+      X-XSS-Protection: 1; mode=block
+      X-Powered-By: NewGenPrep
+
+    Impact: Prevents brute-force attacks, API abuse, and DDoS.
+    Bad actors get HTTP 429 (Too Many Requests) when exceeding limits.
+
+
+================================================================================
+PHASE 4: API REFACTOR
+================================================================================
+
+  FIX5: Monolith Split
+  --------------------
+
+    BEFORE:
+      backend/interview_api.py  ->  2,038 lines (ALL routes in one file)
+
+    AFTER:
+      backend/interview_api.py       ->  ~140 lines (app init + middleware only)
+      backend/routes/auth_routes.py  ->  Auth endpoints (register, login, etc.)
+      backend/routes/interview_routes.py -> Interview flow endpoints
+      backend/routes/hr_routes.py    ->  HR management endpoints
+      backend/routes/proctoring_routes.py -> Proctoring endpoints
+      backend/routes/practice_routes.py -> Practice mode endpoints
+      backend/routes/recording_routes.py -> Recording upload endpoint
+      backend/services/db_service.py ->  Database connection and session CRUD
+      backend/services/auth_service.py -> Password hashing and JWT
+
+    New Directory Structure:
+      backend/
+        interview_api.py          (slim entry point)
+        routes/
+          __init__.py
+          auth_routes.py
+          interview_routes.py
+          hr_routes.py
+          proctoring_routes.py
+          practice_routes.py
+          recording_routes.py
+        services/
+          __init__.py
+          db_service.py
+          auth_service.py
+        ai_engine.py              (unchanged)
+        question_helpers.py       (unchanged)
+        report_engine.py          (upgraded - see FIX3)
+        notification_service.py   (unchanged)
+        scheduler_service.py      (fixed - see FIX2)
+
+    Impact: Each module is now independently maintainable. Adding new
+    features (V3.0) only requires creating a new route file and including
+    it in interview_api.py with one line.
+
+
+================================================================================
+PHASE 5: FEATURE FIXES
+================================================================================
+
+  FIX1: Real Analytics Data
+  -------------------------
+    File: backend/routes/hr_routes.py (GET /api/hr/analytics)
+
+    Before:
+      skillAnalysis returned hardcoded: Python(15), JavaScript(12), React(10)
+      performanceTrend returned hardcoded: 2024-01 through 2024-03
+
+    After:
+      skillAnalysis aggregates real detected_skills from all completed
+      session responses. Returns top 10 skills by mention count with
+      real average scores per skill.
+
+      performanceTrend groups completed sessions by month (from created_at
+      field). Returns last 6 months of real interview counts and avg scores.
+
+    Flow:
+      GET /api/hr/analytics
+           |
+           v
+      Query all completed sessions
+           |
+           +---> For each response.detected_skills[]
+           |        Count mentions, sum quality scores
+           |        Build: {skill, mentions, avgScore}
+           |
+           +---> For each session.created_at
+           |        Group by YYYY-MM
+           |        Count interviews, avg quality score
+           |        Build: {date, interviews, avgScore}
+           |
+           v
+      Return sorted, limited results (top 10 skills, last 6 months)
+
+  FIX2: Background Scheduler
+  --------------------------
+    File: backend/scheduler_service.py (completely rewritten)
+
+    Before: asyncio.create_task was commented out (Windows crash)
+
+    After:
+      - Proper asyncio.CancelledError handling
+      - Chunked sleep (5-second intervals) for responsive cancellation
+      - Graceful stop() method called on app shutdown
+      - Uses FastAPI lifespan context manager (not deprecated on_event)
+      - Checks every 30 minutes for upcoming interviews
+      - Sends 24h reminders and 1h reminders automatically
+
+    Flow:
+      App Startup -> scheduler.start()
+           |
+           v
+      Background loop (every 30 min):
+           |
+           +---> Query schedules with status: scheduled, sent, confirmed
+           |
+           +---> For each schedule:
+           |        Parse date + time -> interview_dt
+           |        Calculate time_until = interview_dt - now
+           |
+           |        If 23h <= time_until <= 25h AND not reminderSent24hr:
+           |             Send 24h reminder email
+           |             Update reminderSent24hr = True
+           |
+           |        If 45min <= time_until <= 1h15min AND not reminderSent1hr:
+           |             Send 1h reminder email
+           |             Update reminderSent1hr = True
+           |
+           v
+      App Shutdown -> scheduler.stop() (graceful, no crash)
+
+  FIX3: Report Engine Upgrade
+  ---------------------------
+    File: backend/report_engine.py (rewritten from 40 to ~200 lines)
+
+    Before: Simple dict with avg score, rating, and skill list
+
+    After:
+      generate_report_summary() now returns:
+        - overall_score and rating
+        - per_question breakdown (question text, type, stage, scores)
+        - stage_breakdown (avg quality and relevance per stage)
+        - competency_summary (aggregated rubric competency scores)
+        - proctoring_summary (warning count, incidents, integrity score)
+        - skills_detected (with mention counts)
+
+      generate_html_report() NEW function:
+        - Generates downloadable HTML report
+        - Dark theme with gradient header
+        - Metrics cards (score, rating, integrity)
+        - Stage performance table
+        - Per-question breakdown table with color coding
+        - Competency progress bars
+        - Skills tag cloud
+        - Proctoring summary
+
+    New Endpoint: GET /api/interview/report/{id}/download
+      Returns: HTML file attachment (NewGenPrep_Report_{id}.html)
+
+  FIX4: Password Reset Flow
+  -------------------------
+    Backend Files:
+      backend/routes/auth_routes.py
+        POST /api/auth/forgot-password
+        POST /api/auth/reset-password
+
+    Frontend File:
+      frontend/app/forgot-password/page.tsx (completely rewritten)
+
+    Flow:
+      Step 1 (Email Entry):
+        User enters email -> POST /api/auth/forgot-password
+        Backend generates 6-digit OTP
+        OTP stored in password_resets collection (hashed, 15-min TTL)
+        Email sent via notification_service (or logged to console)
+
+      Step 2 (OTP + New Password):
+        User enters 6-digit code + new password + confirm password
+        POST /api/auth/reset-password
+        Backend validates OTP hash and expiry
+        If valid: Update user password (Argon2), delete used OTP
+
+      Step 3 (Success):
+        Success message with link to login page
+
+    Security:
+      - OTP stored as Argon2 hash (not plaintext)
+      - No email enumeration (always returns success on forgot-password)
+      - TTL index auto-deletes expired OTPs from database
+      - OTP deleted after successful use (one-time only)
+
+
+================================================================================
+VERIFICATION RESULTS
+================================================================================
+
+  Backend Start:      PASS  (uvicorn on port 8000)
+  MongoDB Connect:    PASS  (Atlas cluster, poolSize=200)
+  Index Creation:     PASS  (all 7 collections indexed)
+  Scheduler Start:    PASS  (background task running)
+  Health Endpoint:    PASS  (200 OK, version 2.0.0)
+  Route Count:        PASS  (43 endpoints registered)
+  Rate Limiting:      PASS  (slowapi middleware active)
+  Security Headers:   PASS  (X-Frame-Options, X-XSS-Protection)
+
+
+================================================================================
+FILES CREATED (NEW)
+================================================================================
+
+  backend/routes/__init__.py
+  backend/routes/auth_routes.py
+  backend/routes/interview_routes.py
+  backend/routes/hr_routes.py
+  backend/routes/proctoring_routes.py
+  backend/routes/practice_routes.py
+  backend/routes/recording_routes.py
+  backend/services/__init__.py
+  backend/services/db_service.py
+  backend/services/auth_service.py
+  documentation/V2_COMPLETION_PLAN.txt
+  documentation/SYSTEM_ARCHITECTURE.txt
+  documentation/V2_CHANGELOG.txt (this file)
+
+
+FILES MODIFIED
+================================================================================
+
+  frontend/package.json           (name, version)
+  backend/interview_api.py        (rewritten - 2038 lines to 140 lines)
+  backend/report_engine.py        (rewritten - 40 lines to 200 lines)
+  backend/scheduler_service.py    (rewritten - fixed asyncio crash)
+  backend/requirements.txt        (added slowapi)
+  frontend/app/forgot-password/page.tsx  (rewritten - real API flow)
+
+
+
+================================================================================
+PHASE 6: ADVANCED TECHNICAL ROUND (ROUND 2)
+================================================================================
+
+  TECHNICAL IDE INTEGRATION
+  -------------------------
+    File: frontend/app/interview/technical/page.tsx
+    
+    Features:
+      - Monaco Editor integration (VS Code-like experience)
+      - Dynamic language support (Python, JavaScript)
+      - Challenge Bank: Real-world debugging & feature implementation
+      - Terminal Output emulator for live feedback
+      - Interactive AI Pair Programming chat
+
+  CODE EXECUTION SANDBOX
+  ----------------------
+    File: backend/routes/code_execution_routes.py
+    Backend: Judge0 CE (Self-hosted/Remote API)
+    
+    Impact: Replaced restricted and slow Piston API with secure, high-speed 
+    sandboxed execution. Supports multiple languages with stdin/stdout/stderr
+    capture.
+
+  AI PAIR PROGRAMMING ENGINE
+  --------------------------
+    Module: backend/ai_engine.py
+    Function: evaluate_technical_pairing()
+    
+    Logic:
+      - AI acts as a mentor, not just an evaluator
+      - Analyzes code context + execution output + candidate reasoning
+      - Provides subtle hints and guides the candidate's thought process
+      - Tracks "is_fixed" status for automated challenge completion
+
+  UI/UX POLISH
+  ------------
+    - Chat Input: Vertical auto-expanding textarea with smooth animations
+    - Responsive IDE layout with adjustable terminal height
+    - Challenge selection screen with detailed difficulty and category labels
+
+
+================================================================================
+VERIFICATION RESULTS (FINAL)
+================================================================================
+
+  Backend Start:      PASS  (uvicorn on port 8000)
+  MongoDB Connect:    PASS  (Atlas cluster, poolSize=200)
+  Index Creation:     PASS  (all 7 collections indexed)
+  Scheduler Start:    PASS  (background task running)
+  Health Endpoint:    PASS  (200 OK, version 2.0.0)
+  Route Count:        PASS  (44 endpoints registered)
+  Technical Sandbox:  PASS  (Judge0 execution verified)
+  AI Feedback:        PASS  (Technical pairing response verified)
+
+
+================================================================================
+  END OF V2.0 CHANGELOG - MILESTONE COMPLETE
+================================================================================
+

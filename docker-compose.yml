@@ -1,0 +1,62 @@
+# ============================================
+# AI Interview Bot - Docker Compose
+# One-command startup for all services
+# ============================================
+# Usage:
+#   docker-compose up --build        (first time / after changes)
+#   docker-compose up -d             (background mode)
+#   docker-compose down              (stop all)
+#   docker-compose logs -f backend   (follow backend logs)
+# ============================================
+
+services:
+  # ---- Backend API (FastAPI + Python) ----
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: interview-bot-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - backend-recordings:/app/recordings
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; r=httpx.get('http://localhost:8000/health'); exit(0 if r.status_code==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - interview-network
+
+  # ---- Frontend (Next.js → Nginx) ----
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+    container_name: interview-bot-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - interview-network
+
+# ---- Volumes ----
+volumes:
+  backend-recordings:
+    driver: local
+
+# ---- Networks ----
+networks:
+  interview-network:
+    driver: bridge

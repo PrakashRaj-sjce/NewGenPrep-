@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Session - AI Interview Bot</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0a0f;
+            color: white;
+            font-family: -apple-system, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #1e293b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .main-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 24px;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        .video-container {
+            background-color: #111118;
+            border-radius: 12px;
+            border: 1px solid #1e293b;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .chat-container {
+            background-color: #111118;
+            border-radius: 12px;
+            border: 1px solid #1e293b;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .chat-input {
+            padding: 16px;
+            border-top: 1px solid #1e293b;
+            display: flex;
+            gap: 8px;
+        }
+
+        input {
+            flex: 1;
+            background: #1e1e2d;
+            border: 1px solid #334155;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        button#send-btn {
+            background-color: #06b6d4;
+            color: black;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 24px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .control-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+        }
+
+        .control-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div
+                style="width: 32px; height: 32px; background: linear-gradient(135deg, #22d3ee, #2563eb); border-radius: 6px;">
+            </div>
+            <h2 style="margin: 0; font-size: 18px;">Interview in Progress</h2>
+        </div>
+        <div id="session-info" style="color: #94a3b8; font-size: 14px;">
+            Session ID: <span id="session-id">Loading...</span>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <div class="video-container">
+            <video id="user-video" autoplay muted playsinline></video>
+            <div class="controls">
+                <div class="control-btn" id="mic-toggle" title="Toggle Mic">🎙️</div>
+                <div class="control-btn" id="video-toggle" title="Toggle Video">📹</div>
+                <div class="control-btn" id="end-btn" style="background-color: #ef4444;" title="End Session">📞</div>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-box">
+                <div style="color: #06b6d4; margin-bottom: 8px;"><b>AI Assistant:</b> Preparing your interview
+                    questions...</div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="input-field" placeholder="Type your response...">
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="interview.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,268 @@
+{
+    "question_sets": [
+        {
+            "role": "Software Engineer (SDE)",
+            "company": "Google",
+            "difficulty": "Hard",
+            "questions": [
+                "Design Google's database for web indexing - how would you handle billions of pages?",
+                "Implement a Trie data structure for prefix matching in Google Search autocomplete",
+                "Merge two sorted arrays without using extra space - optimize for time complexity",
+                "Find all unique triplets [a, b, c] where a + b + c = 0 in an array",
+                "Design Google Docs' real-time collaborative editing system",
+                "Implement a Snapshot Array that supports get, set, and snapshot operations",
+                "Find the lowest common ancestor of two nodes in a binary tree",
+                "Design a cleaning algorithm for a robot vacuum cleaner (navigation)",
+                "How would you design the YouTube video click counter system?",
+                "Implement a system to detect cycles in a directed graph",
+                "Design Google Calendar's scheduling conflicts detection system",
+                "Generate all possible balanced parentheses for N pairs",
+                "How would you design a social network feed ranking algorithm?",
+                "Implement reverse Polish notation evaluator",
+                "Design a ticketing platform like Google Events with seat selection"
+            ]
+        },
+        {
+            "role": "Backend Engineer (SDE)",
+            "company": "Amazon",
+            "difficulty": "Hard",
+            "questions": [
+                "Tell me about a time you went above and beyond for a customer (Customer Obsession)",
+                "Design Amazon's order processing system to handle Black Friday traffic",
+                "Tell me about a time you took ownership of a failing project (Ownership)",
+                "Design inventory management for millions of SKUs across warehouses globally",
+                "Describe a situation where you simplified a complex process (Invent and Simplify)",
+                "How would you implement Amazon Prime's 2-day delivery promise system?",
+                "Tell me about a time you made a decision with incomplete information (Are Right, A Lot)",
+                "Design the warehouse routing system for package fulfillment optimization",
+                "Give an example of when you refused to compromise on quality (Highest Standards)",
+                "Implement a distributed transaction system for checkout with ACID properties",
+                "Tell me about a time you disagreed with a manager and how you handled it (Have Backbone)",
+                "Design Amazon's recommendation engine for 'Frequently Bought Together'",
+                "Tell me about a time you had two conflicting deadlines (Deliver Results)",
+                "How would you design the seller marketplace backend for third-party vendors?",
+                "Design a fraud detection system for payment processing in real-time"
+            ]
+        },
+        {
+            "role": "Frontend Engineer",
+            "company": "Meta",
+            "difficulty": "Medium-Hard",
+            "questions": [
+                "Explain the 'this' keyword in JavaScript and provide 3 different use cases",
+                "Implement Facebook News Feed infinite scroll with performance optimization",
+                "What is Prototypal Inheritance and how does it differ from classical inheritance?",
+                "Design the React architecture for Facebook Messenger with 100M+ active users",
+                "Explain Closures in JavaScript - provide a practical example",
+                "Implement a debounce function from scratch without using libraries",
+                "Differences between var, let, and const - when would you use each?",
+                "Design the like/reaction animation system (6 reactions: Like, Love, Haha, Wow, Sad, Angry)",
+                "Implement Array.prototype.flat() without using built-in methods",
+                "How would you optimize image loading for millions of photos in the feed?",
+                "Design a commenting system with nested replies (Reddit-style threading)",
+                "Implement real-time notifications without polling - explain WebSockets vs Server-Sent Events",
+                "How would you handle offline mode in the Facebook mobile web app?",
+                "Design the state management for a complex React application (Context vs Redux)",
+                "Implement a Pinterest-style masonry grid layout UI component"
+            ]
+        },
+        {
+            "role": "Machine Learning Engineer",
+            "company": "Netflix",
+            "difficulty": "Hard",
+            "questions": [
+                "How do you decompose ML model errors into variance and bias components?",
+                "Design Netflix's recommendation algorithm for 200M+ subscribers",
+                "Explain tokenization in NLP and discuss Transformer variants (BERT vs GPT)",
+                "Design a CDN strategy for global video delivery with minimal latency",
+                "What are best practices for checkpointing during long model training runs?",
+                "How would you implement adaptive bitrate streaming for different network conditions?",
+                "Given flat keys like 'layer1.attention.q_proj.weight', transform into nested dict",
+                "Design the 'Continue Watching' feature to sync across devices (mobile, TV, web)",
+                "How would you handle 100M concurrent video streams during peak hours?",
+                "Design A/B testing infrastructure for the Netflix homepage",
+                "Tell me about a time you failed at an ML project and how you handled it",
+                "How would you design chaos engineering for Netflix microservices?",
+                "Design the content licensing and regional availability system",
+                "How do you ensure model fairness and avoid bias in recommendations?",
+                "Implement real-time analytics for viewer behavior (watch time, drop-off points)"
+            ]
+        },
+        {
+            "role": "Data Engineer",
+            "company": "Microsoft",
+            "difficulty": "Hard",
+            "questions": [
+                "Design an end-to-end clickstream data pipeline using Azure services",
+                "How would you implement a data lake solution in Azure (Bronze/Silver/Gold layers)?",
+                "Design a real-time analytics dashboard with sub-5-minute latency",
+                "Build a CDC system from MySQL to Snowflake with exactly-once semantics",
+                "How do you implement Slowly Changing Dimension (SCD) Type 2 in Azure Data Factory?",
+                "Design a scalable data platform for a startup mobile app ingesting from Cosmos DB",
+                "Handle schema evolution in streaming data pipelines",
+                "Design monitoring and alerting for 1000+ data pipelines using Azure Monitor",
+                "Implement data quality checks and governance using Azure Purview",
+                "How would you optimize Spark jobs for processing terabytes of data daily?",
+                "Design disaster recovery and backup strategy for Azure SQL Database",
+                "Implement Infrastructure as Code (IaC) using Terraform for data pipelines",
+                "Design a Lakehouse Architecture using Azure Databricks and Delta Lake",
+                "How would you handle late-arriving data in streaming pipelines?",
+                "Design cost optimization strategy for Azure cloud data resources"
+            ]
+        },
+        {
+            "role": "Full Stack Engineer",
+            "company": "Google",
+            "difficulty": "Hard",
+            "questions": [
+                "Design a URL shortener like bit.ly with custom aliases and analytics",
+                "How would you implement Google Drive's file sharing and permissions system?",
+                "Design autocomplete/type-ahead search with ranking and caching",
+                "Implement a distributed rate limiter for API gateway (token bucket algorithm)",
+                "Design Gmail's spam detection system using ML and rule-based approaches",
+                "How would you implement LRU cache with O(1) get and put operations?",
+                "Design the notification system for Gmail (email, push, in-app)",
+                "Handle conflicts in distributed databases using CRDT or OT",
+                "Implement a web crawler that respects robots.txt and handles politeness",
+                "Design YouTube's video recommendation engine architecture",
+                "How would you optimize React application page load time to under 2 seconds?",
+                "Implement server-side rendering with Next.js - pros/cons vs client-side",
+                "Design a system to detect duplicate content across billions of documents",
+                "How do you ensure data consistency in microservices architecture?",
+                "Implement OAuth 2.0 authorization flow with security best practices"
+            ]
+        },
+        {
+            "role": "DevOps Engineer / SRE",
+            "company": "Microsoft",
+            "difficulty": "Hard",
+            "questions": [
+                "Design a CI/CD pipeline for Azure cloud deployments with blue-green strategy",
+                "How would you implement Kubernetes auto-scaling based on custom metrics?",
+                "Design monitoring and alerting for microservices using Prometheus and Grafana",
+                "Implement zero-downtime database migrations for a production system",
+                "How would you design disaster recovery with RTO under 1 hour?",
+                "Design secrets management using Azure Key Vault and Managed Identities",
+                "Implement infrastructure as code using Terraform - state management challenges",
+                "How would you optimize Docker image build times below 5 minutes?",
+                "Design a multi-region deployment strategy with automatic failover",
+                "How do you handle log aggregation for 1000+ microservices?",
+                "Design a cost optimization strategy for cloud resources (reserved instances, spot)",
+                "Implement automated security scanning in CI/CD (SAST, DAST, dependency check)",
+                "How would you design a service mesh architecture using Istio?",
+                "Design a rollback strategy for failed Kubernetes deployments",
+                "Implement chaos engineering to test system resilience"
+            ]
+        },
+        {
+            "role": "Mobile Engineer (iOS/Android)",
+            "company": "Meta",
+            "difficulty": "Medium-Hard",
+            "questions": [
+                "Design the Facebook app architecture for offline mode and sync",
+                "How would you optimize Instagram feed loading for slow networks (2G/3G)?",
+                "Implement efficient image caching for the photo gallery",
+                "Design push notification system for Facebook Messenger",
+                "How would you handle deep linking across the Facebook app ecosystem?",
+                "Implement real-time chat with message queuing and retry logic",
+                "Design the Stories feature with video recording, filters, and ephemeral storage",
+                "How would you optimize battery consumption for background sync?",
+                "Implement security for sensitive data (biometric auth, encryption)",
+                "Design a modular architecture for a large-scale app (100+ features)",
+                "How would you handle app updates and feature flags for gradual rollouts?",
+                "Implement accessibility features (VoiceOver, TalkBack, dynamic text)",
+                "Design crash reporting and analytics integration",
+                "How would you optimize app size below 100 MB?",
+                "Implement video player with background playback and Picture-in-Picture"
+            ]
+        },
+        {
+            "role": "Backend Engineer",
+            "company": "Netflix",
+            "difficulty": "Hard",
+            "questions": [
+                "Design Netflix's video streaming backend infrastructure",
+                "How would you implement user profile and viewing history across devices?",
+                "Design the subtitle synchronization system for multiple languages",
+                "Implement chaos engineering - how would you test resilience at scale?",
+                "How would you optimize video encoding for different devices (4K, HD, mobile)?",
+                "Design the download for offline viewing feature with DRM protection",
+                "Implement account sharing detection and prevention system",
+                "How would you design the billing and subscription management system?",
+                "Design a system to handle content licensing expiration and removal",
+                "Implement viewing analytics to track user engagement metrics",
+                "How would you design the 'Top 10' trending content calculation?",
+                "Design the parental controls and content rating system",
+                "Implement a global load balancing strategy for video traffic",
+                "How would you monitor and debug issues in a distributed microservices system?",
+                "Design the search and discovery backend for 10,000+ titles"
+            ]
+        },
+        {
+            "role": "Data Scientist",
+            "company": "Amazon",
+            "difficulty": "Hard",
+            "questions": [
+                "Design Amazon's product search ranking algorithm",
+                "How would you detect fraudulent seller accounts using ML?",
+                "Build a customer churn prediction model - which features would you use?",
+                "Design dynamic pricing algorithm based on demand and competition",
+                "How would you optimize warehouse inventory to minimize stockouts?",
+                "Implement A/B testing framework for evaluating new features",
+                "Design customer lifetime value (CLV) prediction model",
+                "How would you handle imbalanced datasets in fraud detection?",
+                "Implement demand forecasting for millions of products",
+                "Design recommendation system using collaborative filtering",
+                "How would you measure and improve model fairness?",
+                "Implement real-time anomaly detection for transaction monitoring",
+                "Design sentiment analysis for product reviews at scale",
+                "How would you evaluate success metrics for Amazon Prime Video recommendations?",
+                "Implement causal inference to measure impact of promotions on sales"
+            ]
+        },
+        {
+            "role": "Security Engineer",
+            "company": "Google",
+            "difficulty": "Hard",
+            "questions": [
+                "Design Google's OAuth 2.0 implementation with security best practices",
+                "How would you detect and prevent DDoS attacks at scale?",
+                "Implement end-to-end encryption for Google Messages",
+                "Design a Web Application Firewall (WAF) with custom rules",
+                "How would you secure microservices communication using mTLS?",
+                "Implement API rate limiting and abuse detection",
+                "Design security for Kubernetes clusters (RBAC, network policies)",
+                "How would you handle security incident response at Google scale?",
+                "Implement vulnerability scanning in CI/CD pipeline",
+                "Design certificate management and rotation for 1000+ services",
+                "How would you prevent SQL injection and XSS attacks?",
+                "Implement secrets management and key rotation strategy",
+                "Design security controls for multi-tenant environments",
+                "How would you audit and monitor privileged access?",
+                "Implement Zero Trust security architecture"
+            ]
+        },
+        {
+            "role": "Product Manager (Technical PM)",
+            "company": "Meta",
+            "difficulty": "Medium",
+            "questions": [
+                "How would you improve Facebook Groups engagement?",
+                "Design a new feature for Instagram to compete with TikTok",
+                "How would you measure success of WhatsApp Business?",
+                "Prioritize features for Facebook Marketplace improvements",
+                "How would you increase retention for Facebook Dating?",
+                "Design metrics dashboard for Instagram Reels performance",
+                "How would you handle privacy concerns for a new AI feature?",
+                "Trade-offs between ad revenue and user experience on Instagram",
+                "How would you launch Stories feature in a new market?",
+                "Design A/B test to evaluate new Facebook reaction button",
+                "How would you reduce fake news spread on the platform?",
+                "Estimate market size for Meta VR/AR products",
+                "How would you improve content moderation at scale?",
+                "Design strategy to compete with emerging social platforms",
+                "How would you balance creator monetization with user experience?"
+            ]
+        }
+    ]
+}

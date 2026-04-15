@@ -1,0 +1,123 @@
+================================================================================
+NEWGENPREP - COMPLETE PROJECT DOCUMENTATION
+================================================================================
+Version: 2.0.0
+Timeline: November 2025 - January 2026
+Documentation Created: April 2026
+
+--------------------------------------------------------------------------------
+1. PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+NewGenPrep is an AI-driven, end-to-end technical recruitment platform designed to 
+replace traditional screening with high-fidelity, adaptive AI interviews. It 
+specializes in transitioning from static DSA questions to "debug and build" 
+engineering challenges (Round 2), mimicking real-world senior pair programming.
+
+--------------------------------------------------------------------------------
+2. TECHNOLOGY STACK
+--------------------------------------------------------------------------------
+FRONTEND:
+- Framework: Next.js 14/15 (App Router)
+- Language: TypeScript
+- Styling: Vanilla CSS + Tailwind CSS (Adaptive Design)
+- Components: Radix UI / Shadcn UI
+- Code Editor: Monaco Editor (@monaco-editor/react)
+- State Mgt: React Hooks + Session Persistence
+
+BACKEND:
+- Framework: FastAPI (Python 3.10+)
+- Async Engine: ASGI (Uvicorn)
+- Security: JWT Authentication, NoSQL Injection Protection, XSS Sanitization
+- Database Driver: Motor (Async MongoDB Driver)
+
+DATABASE:
+- Provider: MongoDB Atlas
+- Nature: Document-based (NoSQL) for flexible interview session storage
+
+AI & EXECUTION:
+- LLM Provider: Azure OpenAI (GPT-4o-mini / o4-mini)
+- Audio Processing: Azure AI Whisper (Speech-to-Text)
+- Vision: AI-based Proctoring Analysis
+- Code Sandbox: Judge0 Community Edition (High-Speed Execution API)
+
+--------------------------------------------------------------------------------
+3. SYSTEM ARCHITECTURE
+--------------------------------------------------------------------------------
+Modular micro-services architecture with clear separation of concerns:
+- Frontend: Handles UI, Monaco state, and real-time candidate signals.
+- Router Layer: FastAPI routes for Auth, Interview, HR, and Execution.
+- Service Layer: AI Engine (ai_engine.py), Report Engine (report_engine.py), 
+  Security Layer (security.py).
+- Persistence: MongoDB for users, candidate profiles, and session outcomes.
+  
+--------------------------------------------------------------------------------
+4. KEY MODULES & IMPLEMENTATIONS
+--------------------------------------------------------------------------------
+[IMPLEMENTED]
+- AUTHENTICATION: Secure login/signup for both Candidates and HR Managers.
+- PASSWORD RESET: Automated 6-digit OTP flow with 15-minute TTL security (FIX 4).
+- RESUME INTELLIGENCE: Extraction of skills, experience, and candidate identity from PDF via AI.
+- ROUND 1 (GENERAL): Adaptive technical and behavioral interview with real-time feedback.
+- ROUND 2 (TECHNICAL): Live IDE with Monaco, Judge0 sandbox, and AI pair-programming hints.
+- PROCTORING ENGINE: Tab-switch detection, browser activity tracking, and alert logging.
+- HR DASHBOARD: Candidate comparison, real-time analytics aggregation (FIX 1).
+- REPORT ENGINE: Advanced HTML report generation with per-question breakdown and download (FIX 3).
+- SCHEDULING SYSTEM: HR scheduling with automated 24h and 1h reminders (FIX 2).
+- RUBRICS & EVALUATION: HR-defined scoring criteria for consistent grading.
+
+[PLANNED / IN-PROGRESS]
+- ADVANCED AI PAIRING: Contextual follow-up questions based on specific 
+  lines of code changed in Round 2.
+- EMOTIONAL INTELLIGENCE: Analyzing sentiment and tone in candidate audio.
+- ENTERPRISE ANALYTICS: Cross-candidate skill gap trends and hiring velocity.
+
+--------------------------------------------------------------------------------
+5. DATA MODELS (DATABASE ENTITIES)
+--------------------------------------------------------------------------------
+- USERS: {id, email, password_hash, role: "candidate"|"hr", name}
+- SESSIONS: {session_id, user_id, status, current_stage, responses: [], 
+             questions_asked: [], proctoring_warnings: []}
+- CANDIDATES: {id, name, email, phone, professional_summary, resume_data, 
+               interview_history: []}
+- QUESTION_SETS: {id, category, questions: [{text, difficulty, tags}]}
+- SCHEDULES: {id, candidate_name, time, status, duration}
+- RUBRICS: {id, name, competencies: [{name, weight, description}]}
+
+--------------------------------------------------------------------------------
+6. PROJECT TIMELINE (NOV - JAN)
+--------------------------------------------------------------------------------
+PHASE 1 (NOVEMBER): THE FOUNDATION
+- Project setup (Frontend boilerplate + FastAPI skeleton).
+- Identity Management & Authentication development.
+- Initial Resume Parsing & Candidate Profiling logic.
+
+PHASE 2 (DECEMBER): THE AI HEART
+- Launch of Round 1 Adaptive Interview Engine.
+- Integration of Audio/Speech-to-Text via Azure AI.
+- Development of the HR Dashboard & Analytical Overview.
+- Implementation of the Proctoring security layer.
+
+PHASE 3 (JANUARY): ADVANCED ENGINEERING
+- Launch of Round 2 Technical Module (Monaco Editor + Judge0).
+- Enterprise features: Rubrics, Scheduling, and PDF Reports.
+- Performance optimization & Security hardening for production.
+- Final migration to continuous profile tracking (Continuity).
+
+--------------------------------------------------------------------------------
+7. REPOSITORY STRUCTURE
+--------------------------------------------------------------------------------
+/frontend
+  /app        -> Next.js App Router (Interview, Dashboard, Auth)
+  /components -> Reusable UI (Monaco, Candidate Management)
+  /lib        -> API Helpers & Utils
+/backend
+  /routes     -> FastAPI endpoint definitions
+  ai_engine.py      -> Azure OpenAI logic
+  interview_api.py  -> Main FastAPI app
+  security.py       -> Protection utilities
+/documentation
+  PROJECT_OVERVIEW.txt -> This file
+  SYSTEM_ARCHITECTURE.txt
+  ...
+================================================================================
+EOF

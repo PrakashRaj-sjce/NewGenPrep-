@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interview Bot</title>
+    <style>
+        body {
+            width: 300px;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0a0a0f;
+            color: white;
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+            text-align: center;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #22d3ee, #2563eb);
+            border-radius: 8px;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        p {
+            font-size: 14px;
+            color: #94a3b8;
+            margin: 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            background-color: #06b6d4;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #0891b2;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #auth-section {
+            width: 100%;
+        }
+
+        #login-btn {
+            background-color: transparent;
+            border: 1px solid #06b6d4;
+            color: #06b6d4;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo"></div>
+        <h1>AI Interview Bot</h1>
+
+        <div id="loading">
+            <p>Checking status...</p>
+        </div>
+
+        <div id="unauthorized" class="hidden">
+            <p>Please login to start your practice session.</p>
+            <button id="login-btn">Login to Dashboard</button>
+        </div>
+
+        <div id="authorized" class="hidden">
+            <p>Ready to master your interview?</p>
+            <button id="start-btn">Start Interview Practice</button>
+        </div>
+    </div>
+    <script src="config.js"></script>
+    <script src="popup.js"></script>
+</body>
+
+</html>

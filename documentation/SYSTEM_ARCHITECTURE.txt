@@ -1,0 +1,546 @@
+================================================================================
+  AI INTERVIEW BOT - SYSTEM ARCHITECTURE DOCUMENT
+  Version: 2.0
+  Created: April 9, 2026
+  Scale: Designed for 1000 to 3000+ concurrent users
+================================================================================
+
+
+TABLE OF CONTENTS
+-----------------
+  1. System Overview
+  2. Technology Stack
+  3. Layer Architecture
+  4. Backend Module Map
+  5. Frontend Module Map
+  6. Database Schema
+  7. API Endpoints Catalog
+  8. Data Flow Diagrams
+  9. Security Architecture
+  10. Scalability Design
+
+
+================================================================================
+1. SYSTEM OVERVIEW
+================================================================================
+
+  The AI Interview Bot is an enterprise recruitment platform that automates
+  first-round technical and behavioral screening using Generative AI.
+
+  Three client interfaces feed into a single backend:
+    1. Web Frontend (Next.js) - Primary candidate and HR interface
+    2. Chrome Extension - Recruiter shortcut for quick scheduling
+    3. Docker deployment - Production containerized setup
+
+  The backend is a FastAPI (Python) server that orchestrates:
+    - User authentication (JWT + Argon2)
+    - AI-powered interview sessions (Azure OpenAI GPT + Whisper)
+    - Real-time proctoring enforcement
+    - Rubric-based scoring
+    - Email notifications
+    - Interview scheduling with automated reminders
+
+
+================================================================================
+2. TECHNOLOGY STACK
+================================================================================
+
+  LAYER            | TECHNOLOGY              | PURPOSE
+  -----------------|-------------------------|-----------------------------
+  Frontend         | Next.js 14/15           | SSR dashboard + client chat
+  Styling          | Tailwind CSS + Vanilla  | UI design system
+  IDE              | Monaco Editor           | Technical Round 2 Editor
+  Backend          | FastAPI (Python 3.10+)  | Async API server
+  Database         | MongoDB Atlas           | Document store
+  AI Chat          | Azure OpenAI GPT        | Question gen, evaluation
+  AI Speech        | Azure Whisper           | Speech to text
+  Code Sandbox     | Judge0 CE               | Sandboxed Code Execution
+  Auth             | JWT + Argon2            | Token auth, password hashing
+  Email            | notification_service    | Custom mock + SMTP
+  PDF Parsing      | pdfplumber              | Resume text extraction
+  Containerization | Docker + Compose        | Deployment packaging
+
+
+================================================================================
+3. LAYER ARCHITECTURE
+================================================================================
+
+  +-------------------------------------------------------------------+
+  |                        CLIENT LAYER                               |
+  |                                                                   |
+  |  +-------------------+  +-----------------+  +-----------------+  |
+  |  | Web Frontend      |  | Chrome Extension|  | Future: Mobile  |  |
+  |  | (Next.js 16)      |  | (Manifest V3)   |  | (React Native)  |  |
+  |  | Port: 3000        |  | Browser Plugin   |  |                 |  |
+  |  +-------------------+  +-----------------+  +-----------------+  |
+  +-------------------------------------------------------------------+
+                              |
+                       HTTPS REST API
+                              |
+  +-------------------------------------------------------------------+
+  |                     MIDDLEWARE LAYER                               |
+  |                                                                   |
+  |  +------------------+  +------------------+  +------------------+ |
+  |  | CORS Middleware   |  | Rate Limiter     |  | JWT Auth         | |
+  |  | (Origin check)   |  | (slowapi)        |  | (Token verify)   | |
+  |  +------------------+  +------------------+  +------------------+ |
+  +-------------------------------------------------------------------+
+                              |
+  +-------------------------------------------------------------------+
+  |                      ROUTE LAYER                                  |
+  |                                                                   |
+  |  +----------------+  +-----------------+  +--------------------+  |
+  |  | auth_routes    |  | interview_routes|  | hr_routes          |  |
+  |  | (login,signup, |  | (upload,start,  |  | (candidates,stats, |  |
+  |  |  reset-pass)   |  |  respond,report)|  |  analytics)        |  |
+  |  +----------------+  +-----------------+  +--------------------+  |
+  |                                                                   |
+  |  +----------------+  +-----------------+  +--------------------+  |
+  |  | code_execution |  | proctoring      |  | practice_routes    |  |
+  |  | (Judge0 sub,   |  | (warn,terminate)|  | (generate,         |  |
+  |  |  status check) |  |                 |  |  evaluate)         |  |
+  |  +----------------+  +-----------------+  +--------------------+  |
+  +-------------------------------------------------------------------+
+                              |
+  +-------------------------------------------------------------------+
+  |                     SERVICE LAYER                                 |
+  |                                                                   |
+  |  +----------------+  +-----------------+  +--------------------+  |
+  |  | db_service     |  | auth_service    |  | ai_engine          |  |
+  |  | (sessions,     |  | (hash, verify,  |  | (GPT calls,        |  |
+  |  |  pooling,      |  |  JWT create)    |  |  Whisper, eval)    |  |
+  |  |  indexing)     |  |                 |  |                    |  |
+  |  +----------------+  +-----------------+  +--------------------+  |
+  |                                                                   |
+  |  +----------------+  +-----------------+  +--------------------+  |
+  |  | report_engine  |  | notification    |  | scheduler_service  |  |
+  |  | (generate      |  | (email send,    |  | (background loop,  |  |
+  |  |  reports, HTML)|  |  templates)     |  |  24h/1h reminders) |  |
+  |  +----------------+  +-----------------+  +--------------------+  |
+  +-------------------------------------------------------------------+
+                              |
+  +-------------------------------------------------------------------+
+  |                      DATA LAYER                                   |
+  |                                                                   |
+  |  +------------------------------------------------------------+  |
+  |  | MongoDB Atlas                                               |  |
+  |  |                                                             |  |
+  |  | Collections:                                                |  |
+  |  |   users           - email(unique), id(unique)               |  |
+  |  |   sessions        - session_id(unique), user_id, status     |  |
+  |  |   schedules       - id(unique), candidateEmail, date        |  |
+  |  |   question_sets   - id(unique), isActive, category          |  |
+  |  |   rubrics         - id(unique)                              |  |
+  |  |   settings        - type(unique)                            |  |
+  |  |   password_resets  - email, expires_at(TTL)                 |  |
+  |  +------------------------------------------------------------+  |
+  +-------------------------------------------------------------------+
+                              |
+  +-------------------------------------------------------------------+
+  |                   EXTERNAL SERVICES LAYER                         |
+  |                                                                   |
+  |  +--------------------+  +------------------+  +---------------+  |
+  |  | Azure OpenAI       |  | SMTP Server      |  | Cloud Storage |  |
+  |  | - GPT (o4-mini)    |  | - Gmail          |  | - Local dev   |  |
+  |  | - Whisper (STT)    |  | - SendGrid       |  | - Azure Blob  |  |
+  |  |                    |  |                   |  | - AWS S3      |  |
+  |  +--------------------+  +------------------+  +---------------+  |
+  +-------------------------------------------------------------------+
+
+
+================================================================================
+4. BACKEND MODULE MAP
+================================================================================
+
+  CURRENT STATE (before refactor):
+    backend/
+      interview_api.py        2038 lines  ALL routes in one file
+      ai_engine.py              725 lines  AI logic
+      question_helpers.py       310 lines  Question selection
+      report_engine.py           40 lines  Basic report
+      notification_service.py   318 lines  Email templates
+      scheduler_service.py      125 lines  Background reminders (disabled)
+      auth.py                    27 lines  JWT create/verify
+
+  TARGET STATE (after refactor):
+    backend/
+      interview_api.py          ~100 lines  App init + middleware only
+      routes/
+        auth_routes.py          ~200 lines  Register, login, logout, me,
+                                            forgot-password, reset-password
+        interview_routes.py     ~400 lines  Upload, start, respond, report,
+                                            history, stats, calendar
+        hr_routes.py            ~350 lines  Candidates, analytics, questions,
+                                            settings, schedule, rubrics
+        proctoring_routes.py    ~100 lines  Warning, terminate
+        practice_routes.py      ~100 lines  Generate, evaluate, mock
+        recording_routes.py     ~100 lines  Upload recording
+      services/
+        db_service.py           ~150 lines  Connection, session CRUD, indexes
+        auth_service.py         ~80 lines   Hash, verify, JWT
+      ai_engine.py              725 lines   (unchanged)
+      question_helpers.py       310 lines   (unchanged)
+      report_engine.py         ~200 lines   (upgraded)
+      report_template.html     ~150 lines   (new - downloadable report)
+      notification_service.py   318 lines   (unchanged)
+      scheduler_service.py     ~150 lines   (fixed)
+
+
+================================================================================
+5. FRONTEND MODULE MAP
+================================================================================
+
+  frontend/
+    app/
+      page.tsx                  Landing page
+      layout.tsx                Root layout with providers
+      globals.css               Global styles
+      login/page.tsx            Login form
+      signup/page.tsx           Registration form
+      forgot-password/page.tsx  Password reset (FIX4: needs real API)
+      contact/page.tsx          Contact page
+      dashboard/
+        hr/page.tsx             HR dashboard (tabs: candidates, analytics,
+                                questions, scheduling, rubrics, settings)
+        candidate/page.tsx      Candidate dashboard (interview, history,
+                                practice, profile)
+      report/                   Interview report viewer
+
+    components/
+      interview-chat.tsx        Core interview voice chat component
+      camera-setup.tsx          Webcam/mic permission setup
+      proctoring-monitor.tsx    Silent proctoring watcher
+      candidate-management.tsx  HR candidate list and filtering
+      enhanced-analytics.tsx    HR analytics charts (FIX1: needs real data)
+      interview-scheduler.tsx   Schedule management
+      question-set-editor.tsx   HR question bank editor
+      scoring-rubrics.tsx       Rubric builder
+      practice-interview.tsx    Practice mode
+      audio-waveform.tsx        Voice visualization
+      video-preview-overlay.tsx Camera preview
+      protected-route.tsx       Auth guard
+      user-profile-dropdown.tsx User menu
+      icons.tsx                 SVG icons
+      theme-provider.tsx        Dark/light mode
+
+    hooks/
+      use-media-devices.ts      Camera/mic hooks
+
+    types/
+      (TypeScript type definitions)
+
+
+================================================================================
+6. DATABASE SCHEMA
+================================================================================
+
+  COLLECTION: users
+    {
+      id:          string (UUID, unique)
+      email:       string (unique, indexed)
+      password:    string (Argon2 hash)
+      name:        string
+      role:        string (candidate | hr | admin)
+      created_at:  string (ISO datetime)
+    }
+
+  COLLECTION: sessions
+    {
+      session_id:          string (UUID, unique, indexed)
+      user_id:             string (indexed)
+      status:              string (created | resume_uploaded | in_progress |
+                                   completed | terminated) (indexed)
+      resume_filename:     string
+      resume_analysis:     object (AI-parsed knowledge graph)
+      target_company:      string (optional)
+      question_count:      number
+      total_questions:     number (default 15)
+      current_stage:       number (1=resume, 2=role, 3=hr)
+      clarification_count: number
+      questions_asked:     array of question objects
+      responses:           array of response objects with scores
+      conversation_history: array of role/content pairs
+      answers:             array
+      warning_count:       number
+      incidents:           array of proctoring incidents
+      assigned_rubric_id:  string (optional)
+      report:              object (generated on completion)
+      created_at:          string (ISO datetime, indexed)
+      completed_at:        string (ISO datetime)
+    }
+
+  COLLECTION: schedules
+    {
+      id:               string (UUID, unique, indexed)
+      candidateName:    string
+      candidateEmail:   string (indexed)
+      date:             string (YYYY-MM-DD, indexed)
+      time:             string (HH:MM)
+      type:             string (technical | behavioral | final)
+      duration:         number (minutes)
+      role:             string (optional)
+      status:           string (scheduled | sent | confirmed | cancelled)
+      timezone:         string
+      notes:            string
+      reminded_24h:     boolean
+      reminded_1h:      boolean
+      notificationsSent: array
+      createdBy:        string
+      created_at:       string
+    }
+
+  COLLECTION: question_sets
+    {
+      id:             string (UUID, unique, indexed)
+      category:       string (indexed)
+      domain:         string
+      questions:      array of {text, id, usageCount, lastUsedAt}
+      questionCount:  number
+      isActive:       boolean (indexed)
+      isMandatory:    boolean
+      uploadedBy:     string
+      createdAt:      string
+      updatedAt:      string
+    }
+
+  COLLECTION: rubrics
+    {
+      id:              string (UUID, unique, indexed)
+      name:            string
+      description:     string
+      competencies:    array of {name, weight, description}
+      totalQuestions:   number (min 15)
+      active:          boolean
+      created_at:      string
+    }
+
+  COLLECTION: settings
+    {
+      type:               string (unique, e.g. hr_config)
+      max_questions:      number
+      adaptive_difficulty: boolean
+      voice_input:        boolean
+      updated_at:         string
+      updated_by:         string
+    }
+
+  COLLECTION: password_resets (NEW)
+    {
+      email:       string (indexed)
+      otp_code:    string (hashed)
+      expires_at:  datetime (TTL index, auto-delete after expiry)
+      created_at:  datetime
+    }
+
+
+================================================================================
+7. API ENDPOINTS CATALOG
+================================================================================
+
+  METHOD | PATH                                  | AUTH    | DESCRIPTION
+  -------|---------------------------------------|--------|---------------------------
+  POST   | /api/auth/register                    | None   | Create new user
+  POST   | /api/auth/login                       | None   | Login, get JWT
+  POST   | /api/auth/logout                      | None   | Client-side logout
+  GET    | /api/auth/me                          | JWT    | Get current user profile
+  POST   | /api/auth/forgot-password             | None   | Request password reset OTP
+  POST   | /api/auth/reset-password              | None   | Reset password with OTP
+  POST   | /api/transcribe                       | JWT    | Audio to text (Whisper)
+  POST   | /api/interview/upload-resume          | JWT    | Upload and parse resume
+  POST   | /api/interview/start                  | JWT    | Start interview session
+  POST   | /api/interview/respond                | JWT    | Submit answer, get next Q
+  GET    | /api/interview/report/{id}            | JWT    | Get interview report
+  GET    | /api/interview/report/{id}/download   | JWT    | Download HTML report (NEW)
+  GET    | /api/interview/history                | JWT    | User interview history
+  GET    | /api/interview/stats                  | JWT    | User statistics
+  GET    | /api/interview/{id}/calendar          | None   | Download .ics file
+  POST   | /api/interview/terminate              | JWT    | End interview (proctoring)
+  POST   | /api/interview/{id}/warning           | JWT    | Log proctoring incident
+  POST   | /api/interview/upload-recording       | JWT    | Upload webcam/screen rec
+  GET    | /api/hr/candidates                    | HR     | List all candidates
+  GET    | /api/hr/analytics                     | HR     | Dashboard analytics
+  GET    | /api/hr/questions                     | HR     | List question sets
+  POST   | /api/hr/questions                     | HR     | Create question set
+  PATCH  | /api/hr/questions                     | HR     | Update question set
+  DELETE | /api/hr/questions                     | HR     | Delete question set
+  GET    | /api/hr/settings                      | HR     | Get HR config
+  POST   | /api/hr/settings                      | HR     | Save HR config
+  GET    | /api/hr/schedule                      | HR     | List schedules
+  POST   | /api/hr/schedule                      | HR     | Create schedule + email
+  POST   | /api/hr/schedule/{id}/status          | HR     | Update schedule status
+  GET    | /api/candidate/schedule               | JWT    | My scheduled interviews
+  GET    | /api/hr/rubrics                       | HR     | List rubrics
+  POST   | /api/hr/rubrics                       | HR     | Create rubric
+  DELETE | /api/hr/rubrics/{id}                  | HR     | Delete rubric
+  POST   | /api/practice/generate                | JWT    | Generate practice Qs
+  POST   | /api/practice/evaluate                | JWT    | Evaluate practice answer
+  GET    | /api/practice/mock/presets             | JWT    | Mock interview presets
+  POST   | /api/practice/mock/questions           | JWT    | Get mock questions
+  GET    | /health                               | None   | Health check
+  GET    | /                                     | None   | API status
+
+
+================================================================================
+8. DATA FLOW DIAGRAMS
+================================================================================
+
+  INTERVIEW PIPELINE (Complete Session Flow):
+
+    [Candidate]
+         |
+         | 1. Upload Resume (PDF, max 5MB)
+         v
+    [POST /api/interview/upload-resume]
+         |
+         | 2. pdfplumber extracts text
+         v
+    [Azure GPT parses resume into Knowledge Graph]
+         |
+         | 3. Returns session_id + analysis
+         v
+    [POST /api/interview/start]
+         |
+         | 4. Generates opening question from resume skills
+         v
+    [Interview Loop - 15 iterations]
+         |
+         +----> Candidate speaks answer
+         |           |
+         |           v
+         |      [Azure Whisper transcribes audio]
+         |           |
+         |           v
+         |      [POST /api/interview/respond]
+         |           |
+         |           v
+         |      [Azure GPT evaluates answer]
+         |           |
+         |           +---> Quality Score > threshold?
+         |           |        |
+         |           |        +--- YES: Generate next question
+         |           |        |         (5-5-5 pattern selection)
+         |           |        |
+         |           |        +--- NO:  Clarification? (max 2)
+         |           |                   |
+         |           |                   +-- YES: Generate follow-up
+         |           |                   |
+         |           |                   +-- NO:  Accept and move on
+         |           |
+         |           v
+         |      [Save to MongoDB]
+         |           |
+         +----<------+  (repeat for 15 questions)
+         |
+         v
+    [Interview Complete]
+         |
+         | 5. Generate report (per-question breakdown)
+         v
+    [Save report to session document]
+         |
+         | 6. Notify HR via email
+         v
+    [Done]
+
+
+  PROCTORING ENFORCEMENT FLOW:
+
+    [Interview Active]
+         |
+         +---> [Fullscreen Lock Active]
+         |        |
+         |        +---> User exits fullscreen?
+         |                 |
+         |                 +---> POST /api/interview/{id}/warning
+         |                 |     type: fullscreen_exit
+         |                 |
+         |                 +---> Warning count incremented
+         |                 |
+         |                 +---> Count >= 3?
+         |                        |
+         |                        +--- YES: Auto-terminate
+         |                        |         POST /api/interview/terminate
+         |                        |
+         |                        +--- NO:  Show warning overlay
+         |
+         +---> [Tab Switch Detector]
+         |        |
+         |        +---> User switches tab?
+         |                 |
+         |                 +---> Same flow as fullscreen exit
+         |
+         +---> [Copy-Paste Blocker]
+                  |
+                  +---> Paste event detected?
+                           |
+                           +---> Event prevented
+                           +---> Warning logged silently
+
+
+================================================================================
+9. SECURITY ARCHITECTURE
+================================================================================
+
+  AUTHENTICATION:
+    - Passwords hashed with Argon2 (memory-hard, GPU-resistant)
+    - JWT tokens with 7-day expiry
+    - Token refresh not implemented (candidate sessions are short-lived)
+    - HR endpoints require role = hr in JWT payload
+
+  API SECURITY:
+    - CORS whitelist (localhost:3000, extension origin, production URL)
+    - Rate limiting per IP and per user (slowapi)
+    - File upload size limits (resume 5MB, recording 500MB)
+    - Input sanitization on all user-provided strings
+    - No SQL injection risk (MongoDB parameterized queries)
+
+  PROCTORING SECURITY:
+    - Fullscreen enforcement (browser API)
+    - Tab switch detection (visibilitychange event)
+    - Copy-paste interception (clipboard event listeners)
+    - All violations logged to session.incidents[]
+    - Auto-termination after configurable violation threshold
+
+  DATA PRIVACY:
+    - Resume data encrypted at rest (MongoDB Atlas encryption)
+    - All traffic over HTTPS in production
+    - Session isolation (user can only access own sessions)
+    - AI processing ignores demographic markers (ethical AI)
+    - Password reset OTPs auto-expire via TTL index
+
+
+================================================================================
+10. SCALABILITY DESIGN (1000-3000+ USERS)
+================================================================================
+
+  DATABASE LAYER:
+    - MongoDB Atlas auto-scaling cluster
+    - Indexed queries on all hot paths (session_id, user_id, email)
+    - Connection pooling: 200 max connections, 10 min warm
+    - TTL indexes for auto-cleanup of expired data
+
+  APPLICATION LAYER:
+    - FastAPI async handlers (non-blocking IO)
+    - Rate limiting prevents abuse (slowapi)
+    - AI calls use httpx with 60s timeout (prevent hanging)
+    - Session data stored in DB (not in-memory for multi-instance)
+
+  DEPLOYMENT LAYER:
+    - Docker Compose for single-server deployment
+    - For 3000+ users: Add NGINX reverse proxy with load balancing
+    - Horizontal scaling: Run multiple FastAPI instances behind NGINX
+    - Each instance connects to same MongoDB Atlas cluster
+
+  BOTTLENECK ANALYSIS:
+    Component          | Bottleneck Risk | Mitigation
+    -------------------|-----------------|----------------------------------
+    MongoDB queries    | MEDIUM          | Indexes + connection pooling
+    Azure OpenAI calls | HIGH            | Rate limits + caching + fallback
+    File uploads       | LOW             | Size limits + streaming
+    WebSocket (future) | MEDIUM          | Horizontal scaling
+    Email sending      | LOW             | Async + queue (future)
+
+
+================================================================================
+  END OF SYSTEM ARCHITECTURE DOCUMENT
+================================================================================
