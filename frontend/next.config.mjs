@@ -1,4 +1,5 @@
-import 'dotenv/config';
+// Note: dotenv is NOT needed on Vercel — env vars are injected natively.
+// Only use dotenv locally via `next dev` which auto-loads .env files.
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
